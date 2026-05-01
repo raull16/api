@@ -1,24 +1,26 @@
 const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ port: process.env.PORT || 8080 });
+const PORT = process.env.PORT || 8080;
+const wss = new WebSocket.Server({ port: PORT });
 
-console.log('WebSocket server started!');
+console.log(`✅ WebSocket server started on port ${PORT}`);
+console.log(`📍 Connect to: wss://vexisfinder.up.railway.app`);
 
 wss.on('connection', (ws) => {
-  console.log('New client connected!');
-
-  ws.on('message', (message) => {
-    console.log('Received:', message.toString());
-
-    // Broadcast to all
-    wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
+    console.log('✅ Client connected!');
+    
+    ws.on('message', (message) => {
+        console.log(`📦 Received: ${message.toString()}`);
+        
+        // Send confirmation back
+        ws.send('Received: ' + message.toString());
     });
-  });
-
-  ws.on('close', () => {
-    console.log('Client disconnected');
-  });
+    
+    ws.on('close', () => {
+        console.log('❌ Client disconnected');
+    });
+    
+    ws.on('error', (error) => {
+        console.log(`⚠️ Error: ${error.message}`);
+    });
 });
