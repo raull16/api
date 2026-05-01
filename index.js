@@ -1,52 +1,58 @@
-const express = require('express');
-const app = express();
+const WebSocket = require('ws');
 
-// Allow all JSON data
-app.use(express.json());
+const PORT = process.env.PORT || 8080;
+const wss = new WebSocket.Server({ port: PORT });
 
-// Log everything that comes in
-app.post('/', (req, res) => {
-    const data = req.body;
+console.log(`⚡ VEXIS WEBSOCKET SERVER STARTED on port ${PORT}`);
+console.log(`📍 WebSocket URL: wss://vexisaj.up.railway.app`);
+
+// Store all connected clients
+const clients = new Set();
+
+wss.on('connection', (ws, req) => {
+    const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    console.log(`✅ ROBLOX CLIENT CONNECTED: ${clientIP}`);
+    clients.add(ws);
     
-    console.log('========================================');
-    console.log('📦 NEW DETECTION RECEIVED!');
-    console.log('========================================');
-    console.log(`🐾 Pet Name: ${data.petName}`);
-    console.log(`💰 Money/s: $${data.moneyPerSecond}`);
-    console.log(`🧬 Mutation: ${data.mutation}`);
-    console.log(`⚔️ In Duel: ${data.isDuel ? 'YES' : 'NO'}`);
-    console.log(`🔗 Job ID: ${data.jobId}`);
-    console.log(`👤 Owner: ${data.owner}`);
-    console.log(`👥 Players: ${data.playerCount}/${data.maxPlayers}`);
-    console.log(`🕐 Time: ${new Date(data.timestamp * 1000).toLocaleString()}`);
-    console.log('========================================\n');
+    // Send welcome message
+    ws.send(JSON.stringify({ type: 'connected', message: 'Connected to Vexis WebSocket!' }));
     
-    // Send success response back to Roblox
-    res.json({ 
-        status: 'success', 
-        message: 'Data received by Vexis API',
-        received: {
-            pet: data.petName,
-            money: data.moneyPerSecond,
-            duel: data.isDuel,
-            jobId: data.jobId
+    ws.on('message', (data) => {
+        try {
+            const message = data.toString();
+            console.log(`📦 RECEIVED FROM ROBLOX: ${message}`);
+            
+            const parsed = JSON.parse(message);
+            console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+            console.log(`🐾 PET: ${parsed.petName}`);
+            console.log(`💰 MONEY: $${parsed.moneyPerSecond}/s`);
+            console.log(`🧬 MUTATION: ${parsed.mutation}`);
+            console.log(`⚔️ DUEL: ${parsed.isDuel ? 'YES ⚔️' : 'NO'}`);
+            console.log(`🔗 JOB ID: ${parsed.jobId}`);
+            console.log(`👤 OWNER: ${parsed.owner}`);
+            console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+            
+            // Send confirmation back to Roblox
+            ws.send(JSON.stringify({ 
+                type: 'received', 
+                message: 'Data received by Vexis Server',
+                timestamp: Date.now()
+            }));
+            
+        } catch (e) {
+            console.log(`⚠️ RAW MESSAGE: ${data.toString()}`);
+            ws.send(JSON.stringify({ type: 'error', message: 'Invalid JSON' }));
         }
+    });
+    
+    ws.on('close', () => {
+        console.log(`❌ CLIENT DISCONNECTED: ${clientIP}`);
+        clients.delete(ws);
+    });
+    
+    ws.on('error', (error) => {
+        console.error(`⚠️ WEBSOCKET ERROR: ${error.message}`);
     });
 });
 
-// Health check endpoint
-app.get('/', (req, res) => {
-    res.json({ 
-        status: 'alive', 
-        message: 'Vexis Finder API is running',
-        endpoints: {
-            post: 'Send data to / with JSON body'
-        }
-    });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`✅ Vexis API running on port ${PORT}`);
-    console.log(`📍 Waiting for POST requests at: https://vexisaj.up.railway.app/`);
-});
+console.log(`🎯 Waiting for Roblox to connect to wss://vexisaj.up.railway.app...`);
