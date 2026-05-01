@@ -1,11 +1,13 @@
 {
-  "name": "vexis-websocket",
+  "name": "trulys-websocket",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js"
   },
   "dependencies": {
-    "ws": "^8.14.2"
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "ws": "^8.18.0"
   }
 }
